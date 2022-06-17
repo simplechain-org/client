@@ -1,11 +1,12 @@
 package log
 
 import (
+	"fmt"
 	"os"
 )
 
 var (
-	root          = &logger{[]interface{}{}, new(swapHandler)}
+	root = &logger{[]interface{}{}, new(swapHandler)}
 )
 
 func init() {
@@ -77,4 +78,3 @@ func WelcomeLog(name, version string) {
 func ExitLog(name, version string) {
 	Info(fmt.Sprintf("name: %s; version: %s, exit", name, version))
 }
-
