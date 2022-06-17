@@ -70,3 +70,11 @@ func Crit(msg string, ctx ...interface{}) {
 func Output(msg string, lvl Lvl, calldepth int, ctx ...interface{}) {
 	root.write(msg, lvl, ctx, calldepth+skipLevel)
 }
+func WelcomeLog(name, version string) {
+	Info(fmt.Sprintf("name: %s; version: %s, exit", name, version))
+}
+
+func ExitLog(name, version string) {
+	Info(fmt.Sprintf("name: %s; version: %s, exit", name, version))
+}
+
