@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/simplechain-org/client/common/math"
+	"github.com/simplechain-org/go-simplechain/common/math"
 )
 
 func TestBlockNumberJSONUnmarshal(t *testing.T) {

@@ -7,8 +7,8 @@ import (
 	"math"
 	"strings"
 
-	"github.com/simplechain-org/client/common"
-	"github.com/simplechain-org/client/common/hexutil"
+	"github.com/simplechain-org/go-simplechain/common"
+	"github.com/simplechain-org/go-simplechain/common/hexutil"
 )
 
 
