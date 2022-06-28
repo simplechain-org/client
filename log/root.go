@@ -13,7 +13,7 @@ func init() {
 	//默认
 	var logger *GlogHandler
 	logger = NewGlogHandler(StreamHandler(os.Stderr, TerminalFormat(true)))
-	logger.Verbosity(LvlDebug)
+	logger.Verbosity(LvlInfo)
 	root.SetHandler(logger)
 }
 
