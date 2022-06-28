@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/simplechain-org/client/log"
 	"reflect"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
-
 )
 
 // handler handles JSON-RPC messages. There is one handler per connection. Note that
@@ -219,7 +219,7 @@ func (h *handler) handleImmediate(msg *jsonrpcMessage) bool {
 		return false
 	case msg.isResponse():
 		h.handleResponse(msg)
-		fmt.Println("Handled RPC response", "reqid", idForLog{msg.ID}, "t", time.Since(start))
+		log.Debug("Handled RPC response", "reqid", idForLog{msg.ID}, "t", time.Since(start))
 		return true
 	default:
 		return false
