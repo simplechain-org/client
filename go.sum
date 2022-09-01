@@ -215,6 +215,8 @@ github.com/simplechain-org/go-simplechain v1.0.6-0.20220831055844-8f1ee4bfac4b h
 github.com/simplechain-org/go-simplechain v1.0.6-0.20220831055844-8f1ee4bfac4b/go.mod h1:+biVthhVHzim02qfdmlAjU9XE1zPAR7uwDbvZYPqq8M=
 github.com/simplechain-org/go-simplechain v1.0.6-0.20220831063100-ef412633907d h1:0LhTSl5JZvCUAnHI/TIcMeAfgVoS+kuP76p8RWZJPzk=
 github.com/simplechain-org/go-simplechain v1.0.6-0.20220831063100-ef412633907d/go.mod h1:+biVthhVHzim02qfdmlAjU9XE1zPAR7uwDbvZYPqq8M=
+github.com/simplechain-org/go-simplechain v1.0.6-0.20220901025820-cc80b5f63237 h1:izORNsiaDyPjqI9CiTztTAPgFV74kKUTVxNkTlcouzg=
+github.com/simplechain-org/go-simplechain v1.0.6-0.20220901025820-cc80b5f63237/go.mod h1:8vKu7oYWbsfCzURzQfzpbl//QIxJwypeLo8hUf+pYjA=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/spaolacci/murmur3 v1.0.1-0.20190317074736-539464a789e9/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
