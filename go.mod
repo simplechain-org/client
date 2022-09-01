@@ -16,7 +16,7 @@ require (
 	github.com/rs/cors v0.0.0-20160617231935-a62a804a8a00
 	github.com/rs/xhandler v0.0.0-20170707052532-1eb70cf1520d // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
-	github.com/simplechain-org/go-simplechain v1.0.6-0.20220901032714-665908484156 // indirect
+	github.com/simplechain-org/go-simplechain v1.0.6-0.20220901060302-573eb235bf61 // indirect
 	github.com/tjfoc/gmsm v1.4.1 // indirect
 	golang.org/x/sys v0.0.0-20201113233024-12cec1faf1ba // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
