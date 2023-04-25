@@ -10,6 +10,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v0.0.0-20180603214616-504e848d77ea
 	github.com/exascience/pargo v1.1.0 // indirect
+	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/gorilla/websocket v1.5.0
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/panjf2000/ants/v2 v2.4.3 // indirect
