@@ -2,16 +2,16 @@ package rpc
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/simplechain-org/go-simplechain/common/hexutil"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/simplechain-org/go-simplechain/common"
-	"github.com/simplechain-org/go-simplechain/common/hexutil"
 )
-
-
 
 // API describes the set of methods offered over the RPC interface
 type API struct {
@@ -78,7 +78,7 @@ func (bn *BlockNumber) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	blckNum, err := hexutil.DecodeUint64(input)
+	blckNum, err := DecodeUint64(input)
 	if err != nil {
 		return err
 	}
@@ -182,4 +182,68 @@ func BlockNumberOrHashWithHash(hash common.Hash, canonical bool) BlockNumberOrHa
 		BlockHash:        &hash,
 		RequireCanonical: canonical,
 	}
+}
+
+// DecodeUint64 decodes a hex string with 0x prefix as a quantity.
+func DecodeUint64(input string) (uint64, error) {
+	raw, err := checkNumber(input)
+	if err != nil {
+		return 0, err
+	}
+	dec, err := strconv.ParseUint(raw, 16, 64)
+	if err != nil {
+		err = mapError(err)
+	}
+	return dec, err
+}
+func checkNumber(input string) (raw string, err error) {
+	if len(input) == 0 {
+		return "", ErrEmptyString
+	}
+	if !has0xPrefix(input) {
+		return "", ErrMissingPrefix
+	}
+	input = input[2:]
+	if len(input) == 0 {
+		return "", ErrEmptyNumber
+	}
+	if len(input) > 1 && input[0] == '0' {
+		return "", ErrLeadingZero
+	}
+	return input, nil
+}
+
+var (
+	ErrEmptyString   = &decError{"empty hex string"}
+	ErrSyntax        = &decError{"invalid hex string"}
+	ErrMissingPrefix = &decError{"hex string without 0x prefix"}
+	ErrOddLength     = &decError{"hex string of odd length"}
+	ErrEmptyNumber   = &decError{"hex string \"0x\""}
+	ErrLeadingZero   = &decError{"hex number with leading zero digits"}
+	ErrUint64Range   = &decError{"hex number > 64 bits"}
+)
+
+func has0xPrefix(input string) bool {
+	return len(input) >= 2 && input[0] == '0' && (input[1] == 'x' || input[1] == 'X')
+}
+
+type decError struct{ msg string }
+
+func (err decError) Error() string { return err.msg }
+func mapError(err error) error {
+	if err, ok := err.(*strconv.NumError); ok {
+		switch err.Err {
+		case strconv.ErrRange:
+			return ErrUint64Range
+		case strconv.ErrSyntax:
+			return ErrSyntax
+		}
+	}
+	if _, ok := err.(hex.InvalidByteError); ok {
+		return ErrSyntax
+	}
+	if err == hex.ErrLength {
+		return ErrOddLength
+	}
+	return err
 }

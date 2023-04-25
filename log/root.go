@@ -73,10 +73,10 @@ func Crit(msg string, ctx ...interface{}) {
 }
 
 // Output is a convenient alias for write, allowing for the modification of
-// the calldepth (number of stack frames to skip).
-// calldepth influences the reported line number of the log message.
-// A calldepth of zero reports the immediate caller of Output.
-// Non-zero calldepth skips as many stack frames.
+// the callDepth (number of stack frames to skip).
+// callDepth influences the reported line number of the log message.
+// A callDepth of zero reports the immediate caller of Output.
+// Non-zero callDepth skips as many stack frames.
 func Output(msg string, lvl Lvl, callDepth int, ctx ...interface{}) {
 	root.write(msg, lvl, ctx, callDepth+skipLevel)
 }
@@ -131,8 +131,5 @@ func extra(ctx ...interface{}) []interface{} {
 	extension = append(extension, realPath)
 	extension = append(extension, "func")
 	extension = append(extension, funcName)
-	goroutineId := GetCurrentGoroutineId()
-	extension = append(extension, "goroutine")
-	extension = append(extension, goroutineId)
 	return extension
 }
