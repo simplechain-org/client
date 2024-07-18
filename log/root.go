@@ -126,10 +126,5 @@ func GetCurrentGoroutineId() int {
 func extra(ctx ...interface{}) []interface{} {
 	extension := make([]interface{}, 0)
 	extension = append(extension, ctx...)
-	realPath, funcName := GetFileAndLine()
-	extension = append(extension, "path")
-	extension = append(extension, realPath)
-	extension = append(extension, "func")
-	extension = append(extension, funcName)
 	return extension
 }
