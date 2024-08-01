@@ -1,9 +1,26 @@
+// Copyright 2019 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
 package rpc
 
 import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"strings"
 	"sync"
 	"time"
 )
@@ -47,6 +64,12 @@ type echoResult struct {
 	Args   *echoArgs
 }
 
+type testError struct{}
+
+func (testError) Error() string          { return "testError" }
+func (testError) ErrorCode() int         { return 444 }
+func (testError) ErrorData() interface{} { return "testError data" }
+
 func (s *testService) NoArgsRets() {}
 
 func (s *testService) Echo(str string, i int, args *echoArgs) echoResult {
@@ -59,6 +82,11 @@ func (s *testService) EchoWithCtx(ctx context.Context, str string, i int, args *
 
 func (s *testService) Sleep(ctx context.Context, duration time.Duration) {
 	time.Sleep(duration)
+}
+
+func (s *testService) Block(ctx context.Context) error {
+	<-ctx.Done()
+	return errors.New("context canceled in testservice_block")
 }
 
 func (s *testService) Rets() (string, error) {
@@ -76,6 +104,10 @@ func (s *testService) InvalidRets2() (string, string) {
 
 func (s *testService) InvalidRets3() (string, string, error) {
 	return "", "", nil
+}
+
+func (s *testService) ReturnError() error {
+	return testError{}
 }
 
 func (s *testService) CallMeBack(ctx context.Context, method string, args []interface{}) (interface{}, error) {
@@ -162,4 +194,13 @@ func (s *notificationTestService) HangSubscription(ctx context.Context, val int)
 		notifier.Notify(subscription.ID, val)
 	}()
 	return subscription, nil
+}
+
+// largeRespService generates arbitrary-size JSON responses.
+type largeRespService struct {
+	length int
+}
+
+func (x largeRespService) LargeResp() string {
+	return strings.Repeat("x", x.length)
 }

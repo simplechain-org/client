@@ -1,14 +1,31 @@
+// Copyright 2019 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
 package rpc
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // handler handles JSON-RPC messages. There is one handler per connection. Note that
@@ -17,21 +34,20 @@ import (
 //
 // The entry points for incoming messages are:
 //
-//    h.handleMsg(message)
-//    h.handleBatch(message)
+//	h.handleMsg(message)
+//	h.handleBatch(message)
 //
 // Outgoing calls use the requestOp struct. Register the request before sending it
 // on the connection:
 //
-//    op := &requestOp{ids: ...}
-//    h.addRequestOp(op)
+//	op := &requestOp{ids: ...}
+//	h.addRequestOp(op)
 //
 // Now send the request, then wait for the reply to be delivered through handleMsg:
 //
-//    if err := op.wait(...); err != nil {
-//        h.removeRequestOp(op) // timeout, etc.
-//    }
-//
+//	if err := op.wait(...); err != nil {
+//	    h.removeRequestOp(op) // timeout, etc.
+//	}
 type handler struct {
 	reg            *serviceRegistry
 	unsubscribeCb  *callback
@@ -42,6 +58,7 @@ type handler struct {
 	rootCtx        context.Context                // canceled by close()
 	cancelRoot     func()                         // cancel function for rootCtx
 	conn           jsonWriter                     // where responses will be sent
+	log            log.Logger
 	allowSubscribe bool
 
 	subLock    sync.Mutex
@@ -65,6 +82,10 @@ func newHandler(connCtx context.Context, conn jsonWriter, idgen func() ID, reg *
 		cancelRoot:     cancelRoot,
 		allowSubscribe: true,
 		serverSubs:     make(map[ID]*Subscription),
+		log:            log.Root(),
+	}
+	if conn.remoteAddr() != "" {
+		h.log = h.log.New("conn", conn.remoteAddr())
 	}
 	h.unsubscribeCb = newCallback(reflect.Value{}, reflect.ValueOf(h.unsubscribe))
 	return h
@@ -167,7 +188,7 @@ func (h *handler) cancelAllRequests(err error, inflightReq *requestOp) {
 	}
 	for id, sub := range h.clientSubs {
 		delete(h.clientSubs, id)
-		sub.quitWithError(false, err)
+		sub.close(err)
 	}
 }
 
@@ -208,6 +229,7 @@ func (h *handler) startCallProc(fn func(*callProc)) {
 // handleImmediate executes non-call messages. It returns false if the message is a
 // call or requires a reply.
 func (h *handler) handleImmediate(msg *jsonrpcMessage) bool {
+	start := time.Now()
 	switch {
 	case msg.isNotification():
 		if strings.HasSuffix(msg.Method, notificationMethodSuffix) {
@@ -217,6 +239,7 @@ func (h *handler) handleImmediate(msg *jsonrpcMessage) bool {
 		return false
 	case msg.isResponse():
 		h.handleResponse(msg)
+		h.log.Trace("Handled RPC response", "reqid", idForLog{msg.ID}, "t", time.Since(start))
 		return true
 	default:
 		return false
@@ -227,7 +250,7 @@ func (h *handler) handleImmediate(msg *jsonrpcMessage) bool {
 func (h *handler) handleSubscriptionResult(msg *jsonrpcMessage) {
 	var result subscriptionResult
 	if err := json.Unmarshal(msg.Params, &result); err != nil {
-		fmt.Println("Dropping invalid subscription message")
+		h.log.Debug("Dropping invalid subscription message")
 		return
 	}
 	if h.clientSubs[result.ID] != nil {
@@ -239,7 +262,7 @@ func (h *handler) handleSubscriptionResult(msg *jsonrpcMessage) {
 func (h *handler) handleResponse(msg *jsonrpcMessage) {
 	op := h.respWait[string(msg.ID)]
 	if op == nil {
-		fmt.Println("Unsolicited RPC response", "reqid", idForLog{msg.ID})
+		h.log.Debug("Unsolicited RPC response", "reqid", idForLog{msg.ID})
 		return
 	}
 	delete(h.respWait, string(msg.ID))
@@ -257,7 +280,7 @@ func (h *handler) handleResponse(msg *jsonrpcMessage) {
 		return
 	}
 	if op.err = json.Unmarshal(msg.Result, &op.sub.subid); op.err == nil {
-		go op.sub.start()
+		go op.sub.run()
 		h.clientSubs[op.sub.subid] = op.sub
 	}
 }
@@ -268,14 +291,20 @@ func (h *handler) handleCallMsg(ctx *callProc, msg *jsonrpcMessage) *jsonrpcMess
 	switch {
 	case msg.isNotification():
 		h.handleCall(ctx, msg)
-		fmt.Println("Served "+msg.Method, "t", time.Since(start))
+		h.log.Debug("Served "+msg.Method, "t", time.Since(start))
 		return nil
 	case msg.isCall():
 		resp := h.handleCall(ctx, msg)
+		var ctx []interface{}
+		ctx = append(ctx, "reqid", idForLog{msg.ID}, "t", time.Since(start))
 		if resp.Error != nil {
-			fmt.Println("Served "+msg.Method, "reqid", idForLog{msg.ID}, "t", time.Since(start), "err", resp.Error.Message)
+			ctx = append(ctx, "err", resp.Error.Message)
+			if resp.Error.Data != nil {
+				ctx = append(ctx, "errdata", resp.Error.Data)
+			}
+			h.log.Warn("Served "+msg.Method, ctx...)
 		} else {
-			fmt.Println("Served "+msg.Method, "reqid", idForLog{msg.ID}, "t", time.Since(start))
+			h.log.Debug("Served "+msg.Method, ctx...)
 		}
 		return resp
 	case msg.hasValidID():
@@ -303,8 +332,22 @@ func (h *handler) handleCall(cp *callProc, msg *jsonrpcMessage) *jsonrpcMessage 
 	if err != nil {
 		return msg.errorResponse(&invalidParamsError{err.Error()})
 	}
+	start := time.Now()
+	answer := h.runMethod(cp.ctx, msg, callb, args)
 
-	return h.runMethod(cp.ctx, msg, callb, args)
+	// Collect the statistics for RPC calls if metrics is enabled.
+	// We only care about pure rpc call. Filter out subscription.
+	if callb != h.unsubscribeCb {
+		rpcRequestGauge.Inc(1)
+		if answer.Error != nil {
+			failedReqeustGauge.Inc(1)
+		} else {
+			successfulRequestGauge.Inc(1)
+		}
+		rpcServingTimer.UpdateSince(start)
+		newRPCServingTimer(msg.Method, answer.Error == nil).UpdateSince(start)
+	}
+	return answer
 }
 
 // handleSubscribe processes *_subscribe method calls.

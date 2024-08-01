@@ -1,3 +1,19 @@
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
 package rpc
 
 import (
@@ -99,6 +115,10 @@ func errorMessage(err error) *jsonrpcMessage {
 	if ok {
 		msg.Error.Code = ec.ErrorCode()
 	}
+	de, ok := err.(DataError)
+	if ok {
+		msg.Error.Data = de.ErrorData()
+	}
 	return msg
 }
 
@@ -117,6 +137,10 @@ func (err *jsonError) Error() string {
 
 func (err *jsonError) ErrorCode() int {
 	return err.Code
+}
+
+func (err *jsonError) ErrorData() interface{} {
+	return err.Data
 }
 
 // Conn is a subset of the methods of net.Conn which are sufficient for ServerCodec.
@@ -178,15 +202,22 @@ func (c *jsonCodec) remoteAddr() string {
 	return c.remote
 }
 
-func (c *jsonCodec) readBatch() (msg []*jsonrpcMessage, batch bool, err error) {
+func (c *jsonCodec) readBatch() (messages []*jsonrpcMessage, batch bool, err error) {
 	// Decode the next JSON object in the input stream.
 	// This verifies basic syntax, etc.
 	var rawmsg json.RawMessage
 	if err := c.decode(&rawmsg); err != nil {
 		return nil, false, err
 	}
-	msg, batch = parseMessage(rawmsg)
-	return msg, batch, nil
+	messages, batch = parseMessage(rawmsg)
+	for i, msg := range messages {
+		if msg == nil {
+			// Message is JSON 'null'. Replace with zero value so it
+			// will be treated like any other invalid message.
+			messages[i] = new(jsonrpcMessage)
+		}
+	}
+	return messages, batch, nil
 }
 
 func (c *jsonCodec) writeJSON(ctx context.Context, v interface{}) error {
