@@ -3,13 +3,14 @@ module github.com/simplechain-org/client
 go 1.22
 
 require (
+
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.8.0
 	github.com/go-stack/stack v1.8.0
 	github.com/golang/snappy v0.0.4
 	github.com/google/gofuzz v1.0.0
-	github.com/gorilla/websocket v0.0.0-20170926233335-4201258b820c
+	github.com/gorilla/websocket v1.4.2
 	github.com/influxdata/influxdb v1.11.5
 	github.com/influxdata/influxdb-client-go/v2 v2.3.1-0.20210518120617-5d1fff431040
 	github.com/jedisct1/go-minisign v0.0.0-20230811132847-661be99b8267
@@ -21,6 +22,8 @@ require (
 	golang.org/x/crypto v0.16.0
 	golang.org/x/sys v0.15.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
+
+
 )
 
 require (
