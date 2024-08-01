@@ -1,16 +1,31 @@
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
 package rpc
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/simplechain-org/go-simplechain/common/hexutil"
 	"math"
 	"strconv"
 	"strings"
 
-	"github.com/simplechain-org/go-simplechain/common"
+	"github.com/simplechain-org/client/common"
+	"github.com/simplechain-org/client/common/hexutil"
 )
 
 // API describes the set of methods offered over the RPC interface
@@ -19,12 +34,6 @@ type API struct {
 	Version   string      // api version for DApp's
 	Service   interface{} // receiver instance which holds the methods
 	Public    bool        // indication if the methods must be considered safe for public use
-}
-
-// Error wraps RPC errors, which contain an error code in addition to the message.
-type Error interface {
-	Error() string  // returns the message
-	ErrorCode() int // returns the code
 }
 
 // ServerCodec implements reading, parsing and writing RPC messages for the server side of
@@ -78,7 +87,7 @@ func (bn *BlockNumber) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	blckNum, err := DecodeUint64(input)
+	blckNum, err := hexutil.DecodeUint64(input)
 	if err != nil {
 		return err
 	}
@@ -87,6 +96,22 @@ func (bn *BlockNumber) UnmarshalJSON(data []byte) error {
 	}
 	*bn = BlockNumber(blckNum)
 	return nil
+}
+
+// MarshalText implements encoding.TextMarshaler. It marshals:
+// - "latest", "earliest" or "pending" as strings
+// - other numbers as hex
+func (bn BlockNumber) MarshalText() ([]byte, error) {
+	switch bn {
+	case EarliestBlockNumber:
+		return []byte("earliest"), nil
+	case LatestBlockNumber:
+		return []byte("latest"), nil
+	case PendingBlockNumber:
+		return []byte("pending"), nil
+	default:
+		return hexutil.Uint64(bn).MarshalText()
+	}
 }
 
 func (bn BlockNumber) Int64() int64 {
@@ -184,66 +209,23 @@ func BlockNumberOrHashWithHash(hash common.Hash, canonical bool) BlockNumberOrHa
 	}
 }
 
-// DecodeUint64 decodes a hex string with 0x prefix as a quantity.
-func DecodeUint64(input string) (uint64, error) {
-	raw, err := checkNumber(input)
+// DecimalOrHex unmarshals a non-negative decimal or hex parameter into a uint64.
+type DecimalOrHex uint64
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (dh *DecimalOrHex) UnmarshalJSON(data []byte) error {
+	input := strings.TrimSpace(string(data))
+	if len(input) >= 2 && input[0] == '"' && input[len(input)-1] == '"' {
+		input = input[1 : len(input)-1]
+	}
+
+	value, err := strconv.ParseUint(input, 10, 64)
 	if err != nil {
-		return 0, err
+		value, err = hexutil.DecodeUint64(input)
 	}
-	dec, err := strconv.ParseUint(raw, 16, 64)
 	if err != nil {
-		err = mapError(err)
+		return err
 	}
-	return dec, err
-}
-func checkNumber(input string) (raw string, err error) {
-	if len(input) == 0 {
-		return "", ErrEmptyString
-	}
-	if !has0xPrefix(input) {
-		return "", ErrMissingPrefix
-	}
-	input = input[2:]
-	if len(input) == 0 {
-		return "", ErrEmptyNumber
-	}
-	if len(input) > 1 && input[0] == '0' {
-		return "", ErrLeadingZero
-	}
-	return input, nil
-}
-
-var (
-	ErrEmptyString   = &decError{"empty hex string"}
-	ErrSyntax        = &decError{"invalid hex string"}
-	ErrMissingPrefix = &decError{"hex string without 0x prefix"}
-	ErrOddLength     = &decError{"hex string of odd length"}
-	ErrEmptyNumber   = &decError{"hex string \"0x\""}
-	ErrLeadingZero   = &decError{"hex number with leading zero digits"}
-	ErrUint64Range   = &decError{"hex number > 64 bits"}
-)
-
-func has0xPrefix(input string) bool {
-	return len(input) >= 2 && input[0] == '0' && (input[1] == 'x' || input[1] == 'X')
-}
-
-type decError struct{ msg string }
-
-func (err decError) Error() string { return err.msg }
-func mapError(err error) error {
-	if err, ok := err.(*strconv.NumError); ok {
-		switch err.Err {
-		case strconv.ErrRange:
-			return ErrUint64Range
-		case strconv.ErrSyntax:
-			return ErrSyntax
-		}
-	}
-	if _, ok := err.(hex.InvalidByteError); ok {
-		return ErrSyntax
-	}
-	if err == hex.ErrLength {
-		return ErrOddLength
-	}
-	return err
+	*dh = DecimalOrHex(value)
+	return nil
 }
