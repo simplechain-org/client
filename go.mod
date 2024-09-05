@@ -3,6 +3,7 @@ module github.com/simplechain-org/client
 go 1.22
 
 require (
+	github.com/VictoriaMetrics/fastcache v1.12.2
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/cespare/cp v1.1.1
 	github.com/davecgh/go-spew v1.1.1
@@ -14,6 +15,8 @@ require (
 	github.com/google/gofuzz v1.0.0
 	github.com/google/uuid v1.0.0
 	github.com/gorilla/websocket v1.4.2
+	github.com/hashicorp/golang-lru v0.5.1
+	github.com/holiman/bloomfilter/v2 v2.0.3
 	github.com/influxdata/influxdb v1.8.3
 	github.com/influxdata/influxdb-client-go/v2 v2.4.0
 	github.com/jedisct1/go-minisign v0.0.0-20230811132847-661be99b8267
@@ -33,6 +36,7 @@ require (
 )
 
 require (
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/deepmap/oapi-codegen v1.6.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
