@@ -96,7 +96,7 @@ import (
 	"github.com/simplechain-org/client/accounts/abi"
 	"github.com/simplechain-org/client/accounts/abi/bind"
 	"github.com/simplechain-org/client/common"
-	"github.com/simplechain-org/client/engine/types"
+	"github.com/simplechain-org/client/core/types"
 	"github.com/simplechain-org/client/event"
 )
 
